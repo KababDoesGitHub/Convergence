@@ -44,7 +44,7 @@ const Room: React.FC = () => {
           id: msg.id,
           room_id: msg.room_id,
           user_name: msg.user_name || localStorage.getItem('username'), // fallback
-          message: msg.content,
+          message: msg.message || msg.content,
           created_at: msg.created_at
         }];
       });
@@ -94,10 +94,6 @@ const Room: React.FC = () => {
       });
 
       if (response.ok) {
-        // Emit via socket for real-time to others
-        socketRef.current?.emit('send_message', { roomId, content: message });
-        
-        fetchMessages();
         setMessage('');
       } else {
         alert('Failed to send message');

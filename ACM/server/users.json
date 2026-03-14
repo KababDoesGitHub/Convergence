@@ -1,0 +1,98 @@
+[
+  {
+    "username": "rajesh.sharma",
+    "password_hash": "hash_ceo_001"
+  },
+  {
+    "username": "priya.mehta",
+    "password_hash": "hash_cto_001"
+  },
+  {
+    "username": "vikram.patel",
+    "password_hash": "hash_vp_001"
+  },
+  {
+    "username": "anjali.reddy",
+    "password_hash": "hash_mgr_001"
+  },
+  {
+    "username": "arjun.kumar",
+    "password_hash": "hash_mgr_002"
+  },
+  {
+    "username": "kavya.nair",
+    "password_hash": "hash_sadmin_001"
+  },
+  {
+    "username": "rohan.desai",
+    "password_hash": "hash_sadmin_002"
+  },
+  {
+    "username": "neha.singh",
+    "password_hash": "hash_admin_001"
+  },
+  {
+    "username": "aditya.joshi",
+    "password_hash": "hash_admin_002"
+  },
+  {
+    "username": "pooja.gupta",
+    "password_hash": "hash_admin_003"
+  },
+  {
+    "username": "sanjay.iyer",
+    "password_hash": "hash_lead_001"
+  },
+  {
+    "username": "meera.krishnan",
+    "password_hash": "hash_lead_002"
+  },
+  {
+    "username": "karthik.menon",
+    "password_hash": "hash_lead_003"
+  },
+  {
+    "username": "deepak.verma",
+    "password_hash": "hash_sr_001"
+  },
+  {
+    "username": "swati.bhatt",
+    "password_hash": "hash_sr_002"
+  },
+  {
+    "username": "rahul.chopra",
+    "password_hash": "hash_sr_003"
+  },
+  {
+    "username": "amit.shah",
+    "password_hash": "hash_eng_001"
+  },
+  {
+    "username": "shreya.mishra",
+    "password_hash": "hash_eng_002"
+  },
+  {
+    "username": "varun.agarwal",
+    "password_hash": "hash_eng_003"
+  },
+  {
+    "username": "tanvi.rao",
+    "password_hash": "hash_eng_004"
+  },
+  {
+    "username": "nikhil.pandey",
+    "password_hash": "hash_eng_005"
+  },
+  {
+    "username": "isha.bansal",
+    "password_hash": "hash_int_001"
+  },
+  {
+    "username": "aarav.malhotra",
+    "password_hash": "hash_int_002"
+  },
+  {
+    "username": "diya.kapoor",
+    "password_hash": "hash_int_003"
+  }
+]

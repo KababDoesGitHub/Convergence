@@ -38,6 +38,10 @@ router.post('/:roomId', authMiddleware, async (req, res) => {
       WHERE m.message_id = ?
     `, [result.lastID]);
 
+    if (req.io) {
+      req.io.to(req.params.roomId.toString()).emit('new_message', message);
+    }
+
     res.status(201).json(message);
   } catch (err) {
     res.status(500).json({ error: err.message });

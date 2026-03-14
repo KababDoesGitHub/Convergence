@@ -10,8 +10,29 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+const jwt = require('jsonwebtoken');
+
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) return next(new Error('Authentication error'));
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    socket.data.userId = decoded.id;
+    socket.data.username = decoded.username;
+    socket.data.role = decoded.role;
+    next();
+  } catch (err) {
+    next(new Error('Authentication error'));
+  }
+});
+
 app.use(cors());
 app.use(express.json());
+
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 
 app.use('/api/auth', require('./routes/users'));
 app.use('/api/rooms', authMiddleware, roomsRouter);
@@ -30,34 +51,8 @@ async function startServer() {
     console.log(`User connected: ${socket.id}`);
 
     socket.on('join_room', (roomId) => {
-      socket.join(roomId);
-      io.to(roomId).emit('room_joined', { roomId, username: socket.data.username });
-    });
-
-    socket.on('send_message', async ({ roomId, content }) => {
-      // Find the user_id somehow. If using JWT, socket needs to authenticate.
-      // For this demo, we'll try to find a user in room_members or fallback to ID 1.
-      try {
-        const db = await getDb();
-        // Since socket payload didn't explicitly send user id, fallback to ID 1 (CEO) for anonymous socket demo, 
-        // OR in a real app, middleware extracts user_id to socket.data.userId.
-        const userId = socket.data.userId || 1; 
-
-        const result = await db.run('INSERT INTO messages (room_id, sender_id, message_content) VALUES (?, ?, ?)',
-          [roomId, userId, content]
-        );
-
-        const message = await db.get(`
-          SELECT m.message_id as id, m.room_id, m.sender_id as user_id, u.full_name as user_name, m.message_content as content, m.created_at
-          FROM messages m
-          JOIN users u ON m.sender_id = u.user_id
-          WHERE m.message_id = ?
-        `, [result.lastID]);
-
-        io.to(roomId).emit('new_message', { ...message, socketId: socket.id });
-      } catch (err) {
-        console.error('Socket message error:', err);
-      }
+      socket.join(roomId.toString());
+      io.to(roomId.toString()).emit('room_joined', { roomId, username: socket.data.username });
     });
 
     socket.on('leave_room', (roomId) => {
