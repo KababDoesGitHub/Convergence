@@ -39,21 +39,3 @@
 .aether-input-bg {
   background-color: #1a163a;
 }
-
-/* Emergency Protocol Styles */
-.emergency-mode-bg {
-  background: radial-gradient(circle at top right, #3f0f0f 0%, #1a0505 50%, #000000 100%) !important;
-}
-
-.emergency-mode-sidebar {
-  background-color: #0a0000 !important;
-  border-right-color: #3f0f0f !important;
-}
-
-.emergency-mode-text {
-  color: #f7b7b7 !important;
-}
-
-.emergency-mode-accent {
-  color: #ef4444 !important;
-}

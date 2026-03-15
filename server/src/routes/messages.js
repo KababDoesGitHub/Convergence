@@ -5,20 +5,11 @@ const router = express.Router();
 
 // Send message
 router.post('/:roomId', authMiddleware, async (req, res) => {
+  const role = req.user.role;
+
   try {
     const db = await getDb();
-
-    // Check if room exists and get its name
-    const room = await db.get('SELECT * FROM rooms WHERE room_id = ?', [req.params.roomId]);
-    if (!room) return res.status(404).json({ error: 'Room not found' });
-
-    // General Announcements: only CEO (rajesh.sharma) can post
-    if (room.room_name && room.room_name.toLowerCase().includes('general-announcements')) {
-      if (req.user.username !== 'rajesh.sharma') {
-        return res.status(403).json({ error: 'announcements_only_ceo', message: 'Only the CEO (Rajesh Sharma) can post in General Announcements.' });
-      }
-    }
-
+    
     // Check if user is in room
     const member = await db.get(`
       SELECT * FROM room_members
@@ -52,34 +43,6 @@ router.post('/:roomId', authMiddleware, async (req, res) => {
     }
 
     res.status(201).json(message);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Delete a message (admin or message owner)
-router.delete('/:roomId/messages/:messageId', authMiddleware, async (req, res) => {
-  try {
-    const db = await getDb();
-    const message = await db.get('SELECT * FROM messages WHERE message_id = ?', [req.params.messageId]);
-
-    if (!message) return res.status(404).json({ error: 'Message not found' });
-    if (message.room_id !== parseInt(req.params.roomId)) return res.status(400).json({ error: 'Message not in this room' });
-
-    const isAdmin = (req.user.role_level || 0) >= 50;
-    const isOwner = message.sender_id === req.user.id;
-
-    if (!isAdmin && !isOwner) {
-      return res.status(403).json({ error: 'Insufficient permissions to delete this message' });
-    }
-
-    await db.run('UPDATE messages SET is_deleted = 1 WHERE message_id = ?', [req.params.messageId]);
-
-    if (req.io) {
-      req.io.to(req.params.roomId.toString()).emit('message_deleted', { messageId: parseInt(req.params.messageId), roomId: parseInt(req.params.roomId) });
-    }
-
-    res.json({ message: 'Message deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

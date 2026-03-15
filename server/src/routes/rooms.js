@@ -3,12 +3,13 @@ const authMiddleware = require('../middleware/auth');
 const { getDb } = require('../models/database');
 const router = express.Router();
 
-// Create a new channel room (admin/team-lead only)
 router.post('/', authMiddleware, async (req, res) => {
   const { name, description } = req.body;
 
   if (!name) return res.status(400).json({ error: 'Room name required' });
 
+  // Only certain roles can create rooms according to new schema, but we'll simplify for Demo
+  // We check if their role_level is >= 40 (Team Lead)
   const role_level = req.user.role_level || 10;
   if (role_level < 40) {
     return res.status(403).json({ error: 'Insufficient permissions to create rooms' });
@@ -36,7 +37,6 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
-// Create or find a DM room
 router.post('/dm', authMiddleware, async (req, res) => {
   const { recipientId } = req.body;
   if (!recipientId) return res.status(400).json({ error: 'Recipient ID required' });
@@ -45,11 +45,6 @@ router.post('/dm', authMiddleware, async (req, res) => {
     const db = await getDb();
     const currentUserId = Number(req.user.id);
     const recId = Number(recipientId);
-
-    // Get recipient's full name
-    const recipient = await db.get('SELECT user_id, full_name, username FROM users WHERE user_id = ?', [recId]);
-    const recipientName = recipient ? (recipient.full_name || recipient.username) : `User ${recId}`;
-
     // Sort IDs to always generate the same room name for the two users
     const [id1, id2] = [currentUserId, recId].sort((a, b) => a - b);
     const roomName = `DM-${id1}-${id2}`;
@@ -74,16 +69,14 @@ router.post('/dm', authMiddleware, async (req, res) => {
       }
     }
 
-    res.status(200).json({ id: room.room_id, name: room.room_name, recipientName });
+    res.status(200).json({ id: room.room_id, name: room.room_name });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Get rooms for current user
 router.get('/my', authMiddleware, async (req, res) => {
   const role_level = req.user.role_level || 10;
-  const currentUserId = req.user.id;
 
   try {
     const db = await getDb();
@@ -95,23 +88,9 @@ router.get('/my', authMiddleware, async (req, res) => {
         FROM rooms r
         JOIN room_members rm ON r.room_id = rm.room_id
         WHERE rm.user_id = ? AND r.is_active = 1
-      `, [currentUserId]);
+      `, [req.user.id]);
     } else {
       rooms = await db.all('SELECT room_id as id, room_name as name, description FROM rooms WHERE is_active = 1');
-    }
-
-    // Resolve recipient names for DMs
-    for (let room of rooms) {
-      if (room.name.startsWith('DM-')) {
-        const ids = room.name.replace('DM-', '').split('-');
-        const otherId = ids.find(id => Number(id) !== Number(currentUserId));
-        if (otherId) {
-          const recipient = await db.get('SELECT full_name, username FROM users WHERE user_id = ?', [Number(otherId)]);
-          if (recipient) {
-            room.recipientName = recipient.full_name || recipient.username;
-          }
-        }
-      }
     }
     
     res.json(rooms);
@@ -120,7 +99,6 @@ router.get('/my', authMiddleware, async (req, res) => {
   }
 });
 
-// Get room members
 router.get('/:id/members', authMiddleware, async (req, res) => {
   const role_level = req.user.role_level || 10;
 
@@ -131,7 +109,7 @@ router.get('/:id/members', authMiddleware, async (req, res) => {
   try {
     const db = await getDb();
     const members = await db.all(`
-      SELECT u.user_id as id, u.username, u.full_name as name, rm.joined_at, rm.member_role
+      SELECT u.user_id as id, u.username, u.full_name as role, rm.joined_at, rm.member_role
       FROM room_members rm
       JOIN users u ON rm.user_id = u.user_id
       WHERE rm.room_id = ?
@@ -143,42 +121,10 @@ router.get('/:id/members', authMiddleware, async (req, res) => {
   }
 });
 
-// Add a member to a room (admin only)
-router.post('/:id/members', authMiddleware, async (req, res) => {
-  const role_level = req.user.role_level || 10;
-  if (role_level < 50) {
-    return res.status(403).json({ error: 'Insufficient permissions' });
-  }
-
-  const { userId } = req.body;
-  if (!userId) return res.status(400).json({ error: 'userId required' });
-
-  try {
-    const db = await getDb();
-
-    // Check if already a member
-    const existing = await db.get('SELECT * FROM room_members WHERE room_id = ? AND user_id = ?', [req.params.id, userId]);
-    if (existing) return res.status(409).json({ error: 'User is already a member' });
-
-    await db.run('INSERT INTO room_members (room_id, user_id, member_role, can_post, can_invite) VALUES (?, ?, ?, ?, ?)',
-      [req.params.id, userId, 'member', 1, 0]);
-
-    // Notify via socket
-    if (req.io) {
-      req.io.to(req.params.id.toString()).emit('member_added', { roomId: parseInt(req.params.id), userId });
-    }
-
-    res.status(201).json({ message: 'Member added successfully' });
-  } catch(err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Kick (remove) a member from a room (admin only)
 router.delete('/:id/members/:userId', authMiddleware, async (req, res) => {
   const role_level = req.user.role_level || 10;
 
-  if (role_level < 50) {
+  if (role_level < 50) { // Only admins/moderators can kick easily in this simplified backend
     return res.status(403).json({ error: 'Insufficient permissions' });
   }
 
@@ -188,53 +134,15 @@ router.delete('/:id/members/:userId', authMiddleware, async (req, res) => {
       SELECT * FROM room_members WHERE room_id = ? AND user_id = ?
     `, [req.params.id, req.params.userId]);
 
-    if (removedMember) {
-      await db.run('DELETE FROM room_members WHERE room_id = ? AND user_id = ?', 
-        [req.params.id, req.params.userId]);
-
-      if (req.io) {
-        req.io.to(req.params.id.toString()).emit('member_kicked', { roomId: parseInt(req.params.id), userId: parseInt(req.params.userId) });
-      }
-
-      res.json({ message: 'Member removed successfully' });
+    if(removedMember) {
+        await db.run('DELETE FROM room_members WHERE room_id = ? AND user_id = ?', 
+          [req.params.id, req.params.userId]);
+        res.json({ message: 'Member removed successfully' });
     } else {
-      res.status(404).json({ error: 'Member not found' });
+        res.status(404).json({ error: 'Member not found' });
     }
   } catch(err) {
      res.status(500).json({ error: err.message });
-  }
-});
-
-// Update a room (admin can rename, change description)
-router.put('/:id', authMiddleware, async (req, res) => {
-  const role_level = req.user.role_level || 10;
-  if (role_level < 50) {
-    return res.status(403).json({ error: 'Insufficient permissions' });
-  }
-
-  const { name, description } = req.body;
-  if (!name) return res.status(400).json({ error: 'Room name required' });
-
-  try {
-    const db = await getDb();
-    const room = await db.get('SELECT * FROM rooms WHERE room_id = ?', [req.params.id]);
-    if (!room) return res.status(404).json({ error: 'Room not found' });
-
-    await db.run('UPDATE rooms SET room_name = ?, description = ? WHERE room_id = ?',
-      [name, description || room.description, req.params.id]);
-
-    const updatedRoom = await db.get('SELECT room_id as id, room_name as name, description FROM rooms WHERE room_id = ?', [req.params.id]);
-    
-    if (req.io) {
-      req.io.emit('room_updated', updatedRoom);
-    }
-
-    res.json(updatedRoom);
-  } catch (err) {
-    if (err.message && err.message.includes('UNIQUE constraint failed')) {
-      return res.status(409).json({ error: 'Room name already exists' });
-    }
-    res.status(500).json({ error: err.message });
   }
 });
 
@@ -253,18 +161,12 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     }
 
     await db.run('UPDATE rooms SET is_active = 0 WHERE room_id = ?', [req.params.id]);
-
-    if (req.io) {
-      req.io.emit('room_deleted', { roomId: parseInt(req.params.id) });
-    }
-
     res.json({ message: 'Room deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Get all rooms
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const db = await getDb();
