@@ -1,12 +1,13 @@
 import React from 'react';
 import { User as UserType } from '../types';
 import Avatar from './Avatar';
-import { Mail, Briefcase, Calendar, Clock, X } from 'lucide-react';
+import { Mail, Briefcase, Calendar, Clock, X, LogOut } from 'lucide-react';
 
 interface UserProfileModalProps {
   user: UserType | null;
   onClose: () => void;
   onlineUsers: Set<number>;
+  onLogout?: () => void;
 }
 
 // Mock extra fields required by the user's prompt (Department and Joined Since)
@@ -35,7 +36,7 @@ const getMockDetails = (name: string) => {
   };
 };
 
-const UserProfileModal: React.FC<UserProfileModalProps> = ({ user, onClose, onlineUsers }) => {
+const UserProfileModal: React.FC<UserProfileModalProps> = ({ user, onClose, onlineUsers, onLogout }) => {
   if (!user) return null;
 
   const isOnline = onlineUsers.has(Number(user.id));
@@ -100,6 +101,15 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ user, onClose, onli
             </div>
           </div>
 
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="mt-6 w-full flex items-center justify-center gap-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 py-2.5 rounded-lg transition-colors border border-rose-500/20 font-medium"
+            >
+              <LogOut size={16} />
+              Sign Out
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -320,10 +320,11 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
       </div>
 
       {profileUser && (
-        <UserProfileModal 
-          user={profileUser} 
-          onClose={() => setProfileUser(null)} 
-          onlineUsers={onlineUsers} 
+        <UserProfileModal
+          user={profileUser}
+          onClose={() => setProfileUser(null)}
+          onlineUsers={onlineUsers}
+          onLogout={profileUser.id === user.id ? onLogout : undefined}
         />
       )}
 
