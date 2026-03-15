@@ -652,7 +652,7 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
             } else {
               // DM: search for user by name, then start DM
               try {
-                const s = await fetch(API_URL + `/api/users/search?q=${encodeURIComponent(value)}`, {
+                const s = await fetch(API_URL + `/api/auth/search?q=${encodeURIComponent(value)}`, {
                   headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 });
                 if (s.ok) {
