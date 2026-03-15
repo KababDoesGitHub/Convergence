@@ -1,3 +1,4 @@
+import { API_URL, SOCKET_URL } from '../config';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -23,7 +24,7 @@ const RoomList: React.FC<RoomListProps> = ({ user }) => {
 
   const fetchRooms = async () => {
     try {
-      const response = await fetch('/api/rooms', {
+      const response = await fetch(API_URL + '/api/rooms', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

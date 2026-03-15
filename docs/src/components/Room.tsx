@@ -1,3 +1,4 @@
+import { API_URL, SOCKET_URL } from '../config';
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
@@ -62,7 +63,7 @@ const Room: React.FC = () => {
     if (!roomId) return;
 
     try {
-      const response = await fetch(`/api/messages/${roomId}`, {
+      const response = await fetch(API_URL + `/api/messages/${roomId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -84,7 +85,7 @@ const Room: React.FC = () => {
     if (!roomId || !message.trim()) return;
 
     try {
-      const response = await fetch(`/api/messages/${roomId}`, {
+      const response = await fetch(API_URL + `/api/messages/${roomId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

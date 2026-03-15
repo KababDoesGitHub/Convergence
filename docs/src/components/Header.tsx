@@ -1,3 +1,4 @@
+import { API_URL, SOCKET_URL } from '../config';
 import React from 'react';
 import { 
   Search, Bell, Mic, Hash, ChevronDown, Video
@@ -46,7 +47,7 @@ const Header: React.FC<HeaderProps> = ({
 
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
+        const res = await fetch(API_URL + `/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         if (res.ok) {

@@ -1,5 +1,6 @@
+import { API_URL, SOCKET_URL } from './config';
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login';
 import MainChat from './components/MainChat';
 import RoomList from './components/RoomList';
@@ -16,7 +17,7 @@ function App() {
       
       if (token) {
         try {
-          const res = await fetch('/api/auth/me', {
+          const res = await fetch(API_URL + '/api/auth/me', {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           
@@ -80,28 +81,28 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
-        <Route 
-          path="/login" 
-          element={user ? <Navigate to="/" /> : <Login onLogin={handleLogin} />} 
+        <Route
+          path="/login"
+          element={user ? <Navigate to="/" /> : <Login onLogin={handleLogin} />}
         />
-        <Route 
-          path="/" 
-          element={user ? <MainChat user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+        <Route
+          path="/"
+          element={user ? <MainChat user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
         />
-        <Route 
-          path="/rooms" 
-          element={user ? <RoomList user={user} /> : <Navigate to="/login" />} 
+        <Route
+          path="/rooms"
+          element={user ? <RoomList user={user} /> : <Navigate to="/login" />}
         />
-        <Route 
-          path="/room/:roomId" 
-          element={user ? <Room /> : <Navigate to="/login" />} 
+        <Route
+          path="/room/:roomId"
+          element={user ? <Room /> : <Navigate to="/login" />}
         />
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
 

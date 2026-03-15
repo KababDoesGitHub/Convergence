@@ -1,3 +1,4 @@
+import { API_URL, SOCKET_URL } from '../config';
 import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import Header from './Header';
@@ -76,7 +77,7 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
 
   const fetchRooms = async () => {
     try {
-      const response = await fetch('/api/rooms/my', {
+      const response = await fetch(API_URL + '/api/rooms/my', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -108,7 +109,7 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
 
   const fetchMessages = async (roomId: number) => {
     try {
-      const response = await fetch(`/api/messages/${roomId}`, {
+      const response = await fetch(API_URL + `/api/messages/${roomId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -138,7 +139,7 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
     setInputText(''); // Clear early for better UX
 
     try {
-      const response = await fetch(`/api/messages/${selectedRoomId}`, {
+      const response = await fetch(API_URL + `/api/messages/${selectedRoomId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -165,7 +166,7 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
     }
 
     try {
-      const response = await fetch(`/api/messages/${selectedRoomId}/upload`, {
+      const response = await fetch(API_URL + `/api/messages/${selectedRoomId}/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -182,7 +183,7 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
 
   const handleStartDm = async (userId: number) => {
     try {
-      const response = await fetch('/api/rooms/dm', {
+      const response = await fetch(API_URL + '/api/rooms/dm', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -228,7 +229,7 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
         onDeleteRoom={async (roomId: number) => {
           if (!window.confirm('Delete this room? This cannot be undone.')) return;
           try {
-            const res = await fetch(`/api/rooms/${roomId}`, {
+            const res = await fetch(API_URL + `/api/rooms/${roomId}`, {
               method: 'DELETE',
               headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
@@ -335,7 +336,7 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
             setCreateModal(null);
             if (createModal === 'channel') {
               try {
-                const res = await fetch('/api/rooms', {
+                const res = await fetch(API_URL + '/api/rooms', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
@@ -349,7 +350,7 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
             } else {
               // DM: search for user then start DM
               try {
-                const s = await fetch(`/api/users/search?q=${encodeURIComponent(value)}`, {
+                const s = await fetch(API_URL + `/api/users/search?q=${encodeURIComponent(value)}`, {
                   headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 });
                 if (s.ok) {

@@ -1,3 +1,4 @@
+import { API_URL, SOCKET_URL } from '../config';
 import React, { useState, FormEvent } from 'react';
 
 interface LoginProps {
@@ -20,7 +21,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(API_URL + '/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
