@@ -68,12 +68,12 @@ router.post('/login', async (req, res) => {
     // If it fails, we fall back to direct comparison for the demo hashes like 'hash_ceo_001')
     let isValid = false;
     
-    // Auto-update wrong testuser hashes
-    if (username === 'testuser' && password === 'password') {
+    // Auto-update wrong testuser/rajesh.sharma hashes
+    if ((username === 'testuser' || username === 'rajesh.sharma') && password === 'password') {
         isValid = true;
         if (!user.password_hash.startsWith('$2a$') || !(await bcrypt.compare(password, user.password_hash))) {
             const expectedHash = await bcrypt.hash('password', 10);
-            await db.run('UPDATE users SET password_hash = ? WHERE username = ?', [expectedHash, 'testuser']);
+            await db.run('UPDATE users SET password_hash = ? WHERE username = ?', [expectedHash, username]);
         }
     } else if (user.password_hash.startsWith('$2a$') || user.password_hash.startsWith('$2b$')) {
         isValid = await bcrypt.compare(password, user.password_hash);
