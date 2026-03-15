@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "cd server && npm install",
-    "install-all": "cd client && npm install && cd ../server && npm install",
+    "install-all": "cd docs && npm install && cd ../server && npm install",
     "start": "cd server && npm start"
   }
 }

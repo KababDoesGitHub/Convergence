@@ -1,12 +1,15 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { X, FileText, AlertCircle, Download, Info } from 'lucide-react';
 import { User, Message } from '../types';
 import Avatar from './Avatar';
+import AdminContextMenu from './AdminContextMenu';
 
 interface ChatFeedProps {
   messages: Message[];
   currentUser: User;
   isDnDActive: boolean;
+  onDeleteMessage?: (messageId: number) => void;
+  onKickUser?: (userId: string | number, roomId: number) => void;
 }
 
 // Helper to highlight @mentions and render newlines
@@ -41,6 +44,7 @@ const getMockRoleBadge = (name: string) => {
     'Compliance Officer': 'Compliance',
     'Admin': 'System Admin',
     'Ops Lead': 'Ops Lead',
+    'Rajesh': 'CEO',
   };
   const firstName = name.split(' ')[0];
   const role = roles[firstName] || roles[name];
@@ -66,13 +70,37 @@ const SystemMessage = ({ content }: { content: string }) => {
   );
 };
 
-const ChatFeed: React.FC<ChatFeedProps> = ({ messages, currentUser, isDnDActive }) => {
+interface ContextMenuState {
+  x: number;
+  y: number;
+  messageId: number;
+  userId: string | number;
+  roomId: number;
+  text: string;
+}
+
+const ChatFeed: React.FC<ChatFeedProps> = ({ messages, currentUser, isDnDActive, onDeleteMessage, onKickUser }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+
+  const isAdmin = currentUser.role === 'admin' || (currentUser.role_level || 0) >= 50;
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const handleContextMenu = (e: React.MouseEvent, msg: Message) => {
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      messageId: msg.id,
+      userId: msg.user_id,
+      roomId: msg.room_id,
+      text: msg.message,
+    });
+  };
 
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-1 scroll-smooth sleek-scrollbar transition-colors duration-300 relative" id="chat-feed">
@@ -109,6 +137,7 @@ const ChatFeed: React.FC<ChatFeedProps> = ({ messages, currentUser, isDnDActive 
         return (
           <div
             key={msg.id}
+            onContextMenu={(e) => handleContextMenu(e, msg)}
             className={`flex gap-3 group px-2 py-0.5 rounded-lg hover:bg-white/5 transition-colors relative ${
               isCurrentUser ? 'flex-row-reverse' : 'flex-row'
             } ${isContinuation ? 'mt-0.5' : 'mt-4'}`}
@@ -172,12 +201,18 @@ const ChatFeed: React.FC<ChatFeedProps> = ({ messages, currentUser, isDnDActive 
               )}
             </div>
 
-            {/* Hover Delete Action */}
-            <div className={`absolute top-1 ${isCurrentUser ? 'left-2' : 'right-2'} bg-[#1a1a2e] border border-slate-700/50 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity`}>
-              <button className="p-1.5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors" title="Delete">
-                <X size={14} />
-              </button>
-            </div>
+            {/* Hover Quick Delete (own message or admin) */}
+            {(isCurrentUser || isAdmin) && onDeleteMessage && (
+              <div className={`absolute top-1 ${isCurrentUser ? 'left-2' : 'right-2'} bg-[#1a1a2e] border border-slate-700/50 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity`}>
+                <button
+                  onClick={() => onDeleteMessage(msg.id)}
+                  className="p-1.5 hover:bg-white/10 text-slate-400 hover:text-rose-400 transition-colors"
+                  title="Delete message"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
 
           </div>
         );
@@ -195,6 +230,29 @@ const ChatFeed: React.FC<ChatFeedProps> = ({ messages, currentUser, isDnDActive 
 
       {/* Auto-scroll anchor */}
       <div ref={bottomRef} />
+
+      {/* Right-click Context Menu */}
+      {contextMenu && (
+        <AdminContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          isAdmin={isAdmin}
+          isOwnMessage={Number(contextMenu.userId) === Number(currentUser.id)}
+          onClose={() => setContextMenu(null)}
+          onDelete={() => {
+            if (onDeleteMessage) onDeleteMessage(contextMenu.messageId);
+            setContextMenu(null);
+          }}
+          onKick={() => {
+            if (onKickUser) onKickUser(contextMenu.userId, contextMenu.roomId);
+            setContextMenu(null);
+          }}
+          onCopy={() => {
+            navigator.clipboard.writeText(contextMenu.text).catch(() => {});
+            setContextMenu(null);
+          }}
+        />
+      )}
     </div>
   );
 };

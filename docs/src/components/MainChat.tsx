@@ -9,11 +9,127 @@ import UserProfileModal from './UserProfileModal';
 import CreateRoomModal from './CreateRoomModal';
 import CallModal from './CallModal';
 import { User, Message, PowerLog } from '../types';
+import { Lock, UserPlus, X, Users, Shield } from 'lucide-react';
 
 interface MainChatProps {
   user: User;
   onLogout: () => void;
 }
+
+// Modal for managing members (add/kick)
+const ManageMembersModal: React.FC<{
+  roomId: number;
+  onClose: () => void;
+  onAdd: (userId: number) => void;
+  onKick: (userId: number) => void;
+  members: any[];
+}> = ({ roomId, onClose, onAdd, onKick, members }) => {
+  const [searchVal, setSearchVal] = useState('');
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="w-full max-w-md mx-4 rounded-xl shadow-2xl overflow-hidden"
+        style={{ background: 'linear-gradient(145deg, #12122a, #0f0f1e)', border: '1px solid rgba(139,92,246,0.25)' }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/40">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-[#6d28d9]/30 flex items-center justify-center">
+              <Users size={16} className="text-[#8b5cf6]" />
+            </div>
+            <h2 className="text-white font-semibold text-base">Manage Members</h2>
+          </div>
+          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="px-6 py-5 space-y-4">
+          <div>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Members</p>
+            <div className="space-y-1 max-h-40 overflow-y-auto sleek-scrollbar">
+              {members.length === 0 && <p className="text-slate-500 text-sm">No members found.</p>}
+              {members.map((m) => (
+                <div key={m.id} className="flex items-center justify-between bg-[#1a1a2e] rounded-lg px-3 py-2">
+                  <span className="text-sm text-slate-200">{m.name || m.username}</span>
+                  <button onClick={() => onKick(m.id)} className="text-rose-400 hover:text-rose-300 text-xs font-semibold px-2 py-0.5 rounded hover:bg-rose-500/10 transition-colors">Kick</button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Add User by ID</p>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={searchVal}
+                onChange={(e) => setSearchVal(e.target.value)}
+                placeholder="User ID"
+                className="flex-1 bg-[#1a1a2e] border border-slate-700/60 text-slate-200 placeholder-slate-500 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#8b5cf6] transition-all"
+              />
+              <button
+                onClick={() => { if (searchVal) { onAdd(parseInt(searchVal)); setSearchVal(''); } }}
+                disabled={!searchVal}
+                className="px-4 py-2 text-sm font-semibold text-white bg-[#6d28d9] hover:bg-[#7c3aed] disabled:opacity-40 rounded-lg transition-colors"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Modal for renaming a room
+const RenameRoomModal: React.FC<{
+  roomId: number;
+  currentName: string;
+  onClose: () => void;
+  onRename: (roomId: number, name: string) => void;
+}> = ({ roomId, currentName, onClose, onRename }) => {
+  const [name, setName] = useState(currentName);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { inputRef.current?.focus(); inputRef.current?.select(); }, []);
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="w-full max-w-sm mx-4 rounded-xl shadow-2xl overflow-hidden"
+        style={{ background: 'linear-gradient(145deg, #12122a, #0f0f1e)', border: '1px solid rgba(139,92,246,0.25)' }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700/40">
+          <h2 className="text-white font-semibold text-base">Rename Channel</h2>
+          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"><X size={18} /></button>
+        </div>
+        <div className="px-6 py-4">
+          <input
+            ref={inputRef}
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) { onRename(roomId, name.trim()); onClose(); } }}
+            className="w-full bg-[#1a1a2e] border border-slate-700/60 text-slate-200 placeholder-slate-500 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#8b5cf6] transition-all"
+          />
+        </div>
+        <div className="flex justify-end gap-3 px-6 pb-5">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors">Cancel</button>
+          <button
+            disabled={!name.trim() || name.trim() === currentName}
+            onClick={() => { onRename(roomId, name.trim()); onClose(); }}
+            className="px-5 py-2 text-sm font-semibold text-white bg-[#6d28d9] hover:bg-[#7c3aed] disabled:opacity-40 rounded-lg transition-colors"
+          >
+            Rename
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -31,6 +147,11 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [createModal, setCreateModal] = useState<'channel' | 'dm' | null>(null);
   const [showCallModal, setShowCallModal] = useState(false);
+  const [manageMembersRoomId, setManageMembersRoomId] = useState<number | null>(null);
+  const [manageMembersData, setManageMembersData] = useState<any[]>([]);
+  const [renameRoom, setRenameRoom] = useState<{ id: number; name: string } | null>(null);
+
+  const isAdmin = user.role === 'admin' || (user.role_level || 0) >= 50;
 
   // Initialize Socket.IO and fetch rooms
   useEffect(() => {
@@ -70,6 +191,21 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
       });
     });
 
+    // Handle real-time message deletion
+    socket.on('message_deleted', ({ messageId }: { messageId: number }) => {
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+    });
+
+    // Handle real-time room updates
+    socket.on('room_updated', (updatedRoom: any) => {
+      setRooms(prev => prev.map(r => r.id === updatedRoom.id ? { ...r, name: updatedRoom.name } : r));
+    });
+
+    socket.on('room_deleted', ({ roomId }: { roomId: number }) => {
+      setRooms(prev => prev.filter(r => r.id !== roomId));
+      setSelectedRoomId(prev => prev === roomId ? null : prev);
+    });
+
     return () => {
       socket.disconnect();
     };
@@ -84,7 +220,13 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
       });
       if (response.ok) {
         const data = await response.json();
-        setRooms(data);
+        setRooms(prev => {
+          // Preserve recipientName for DMs already in state
+          return data.map((room: any) => {
+            const existing = prev.find(r => r.id === room.id);
+            return existing?.recipientName ? { ...room, recipientName: existing.recipientName } : room;
+          });
+        });
         if (data.length > 0 && !selectedRoomId) {
           setSelectedRoomId(data[0].id);
         }
@@ -136,7 +278,7 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
     if (!inputText.trim() || !selectedRoomId) return;
 
     const content = inputText;
-    setInputText(''); // Clear early for better UX
+    setInputText('');
 
     try {
       const response = await fetch(API_URL + `/api/messages/${selectedRoomId}`, {
@@ -149,7 +291,12 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
       });
 
       if (!response.ok) {
-        console.error('Failed to send message:', response);
+        const err = await response.json();
+        if (err.error === 'announcements_only_ceo') {
+          // Shouldn't happen since we block UI, but handle gracefully
+        } else {
+          console.error('Failed to send message:', err);
+        }
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -181,7 +328,7 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
     }
   };
 
-  const handleStartDm = async (userId: number) => {
+  const handleStartDm = async (userId: number, recipientName?: string) => {
     try {
       const response = await fetch(API_URL + '/api/rooms/dm', {
         method: 'POST',
@@ -193,8 +340,15 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
       });
       if (response.ok) {
         const room = await response.json();
-        // Option 1: fetchRooms() will eventually get it, but we can optimistically update
-        await fetchRooms();
+        const resolvedName = room.recipientName || recipientName;
+        // Store DM with recipient name
+        setRooms(prev => {
+          const exists = prev.find(r => r.id === room.id);
+          if (exists) {
+            return prev.map(r => r.id === room.id ? { ...r, recipientName: resolvedName } : r);
+          }
+          return [...prev, { ...room, recipientName: resolvedName }];
+        });
         setSelectedRoomId(room.id);
       }
     } catch (e) {
@@ -202,12 +356,121 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
     }
   };
 
+  // Admin: delete a message
+  const handleDeleteMessage = async (messageId: number) => {
+    if (!selectedRoomId) return;
+    try {
+      const res = await fetch(API_URL + `/api/messages/${selectedRoomId}/messages/${messageId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (res.ok) {
+        setMessages(prev => prev.filter(m => m.id !== messageId));
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to delete message');
+      }
+    } catch (e) {
+      console.error('Delete message failed:', e);
+    }
+  };
+
+  // Admin: kick user from current room
+  const handleKickUser = async (userId: string | number, roomId: number) => {
+    if (!confirm(`Are you sure you want to kick this user from the channel?`)) return;
+    try {
+      const res = await fetch(API_URL + `/api/rooms/${roomId}/members/${userId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || 'Failed to kick user');
+      }
+    } catch (e) {
+      console.error('Kick user failed:', e);
+    }
+  };
+
+  // Admin: add user to current room
+  const handleAddUser = async (userId: number) => {
+    if (!manageMembersRoomId) return;
+    try {
+      const res = await fetch(API_URL + `/api/rooms/${manageMembersRoomId}/members`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ userId })
+      });
+      if (res.ok) {
+        fetchManageMembers(manageMembersRoomId);
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to add user');
+      }
+    } catch (e) {
+      console.error('Add user failed:', e);
+    }
+  };
+
+  // Admin: rename a room
+  const handleRenameRoom = async (roomId: number, name: string) => {
+    try {
+      const res = await fetch(API_URL + `/api/rooms/${roomId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ name })
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setRooms(prev => prev.map(r => r.id === roomId ? { ...r, name: updated.name } : r));
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to rename room');
+      }
+    } catch (e) {
+      console.error('Rename room failed:', e);
+    }
+  };
+
+  const fetchManageMembers = async (roomId: number) => {
+    try {
+      const res = await fetch(API_URL + `/api/rooms/${roomId}/members`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setManageMembersData(data);
+      }
+    } catch (e) {
+      console.error('Fetch members failed:', e);
+    }
+  };
+
+  const openManageMembers = (roomId: number) => {
+    setManageMembersRoomId(roomId);
+    fetchManageMembers(roomId);
+  };
+
   const activeRoom = rooms.find(r => r.id === selectedRoomId);
   const activeRoomName = activeRoom ? (
     activeRoom.name.startsWith('DM-') 
-      ? activeRoom.name.replace('DM-', 'Chat ') 
+      ? (activeRoom.recipientName || activeRoom.name.replace('DM-', 'Chat '))
       : activeRoom.name
   ) : undefined;
+
+  // Check if active room is General Announcements
+  const isAnnouncementsRoom = !!(activeRoom && activeRoom.name && activeRoom.name.toLowerCase() === 'general-announcements');
+  // CEO username check
+  const isCeo = user.role === 'admin' && localStorage.getItem('username') === 'Rajesh Sharma';
+  // Actually check by stored username from token — we use the user object name
+  const isRajeshSharma = user.name === 'Rajesh Sharma';
+  const canPostInRoom = !isAnnouncementsRoom || isRajeshSharma;
 
   return (
     <div className="flex h-screen aether-chat-bg text-gray-200 transition-colors duration-300 overflow-hidden">
@@ -244,6 +507,8 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
             console.error(e);
           }
         }}
+        onRenameRoom={isAdmin ? (roomId, currentName) => setRenameRoom({ id: roomId, name: currentName }) : undefined}
+        onManageMembers={isAdmin ? openManageMembers : undefined}
       />
 
       {/* Main Content Area on the Right */}
@@ -271,17 +536,38 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
             messages={messages.filter(m => (!selectedRoomId || m.room_id === selectedRoomId) && (!searchQuery || m.message.toLowerCase().includes(searchQuery.toLowerCase()) || m.user_name.toLowerCase().includes(searchQuery.toLowerCase())))}
             currentUser={user}
             isDnDActive={isDnDActive}
+            onDeleteMessage={handleDeleteMessage}
+            onKickUser={handleKickUser}
           />
           
           {selectedRoomId ? (
-            <MessageInput 
-              inputText={inputText}
-              setInputText={setInputText}
-              handleSendMessage={handleSendMessage}
-              handleSendFile={handleSendFile}
-              isDnDActive={isDnDActive}
-              roomName={activeRoomName}
-            />
+            <>
+              {/* Announcements restriction banner */}
+              {isAnnouncementsRoom && !canPostInRoom && (
+                <div className="mx-4 mb-3 flex items-center gap-3 px-4 py-3 rounded-xl border"
+                  style={{
+                    background: 'rgba(109,40,217,0.1)',
+                    borderColor: 'rgba(139,92,246,0.3)',
+                  }}>
+                  <div className="w-8 h-8 rounded-lg bg-[#6d28d9]/30 flex items-center justify-center shrink-0">
+                    <Lock size={15} className="text-[#8b5cf6]" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-200">Read-only Channel</p>
+                    <p className="text-xs text-slate-400">Only the CEO (Rajesh Sharma) can post here.</p>
+                  </div>
+                </div>
+              )}
+              <MessageInput 
+                inputText={inputText}
+                setInputText={setInputText}
+                handleSendMessage={handleSendMessage}
+                handleSendFile={handleSendFile}
+                isDnDActive={isDnDActive}
+                roomName={activeRoomName}
+                disabled={!canPostInRoom}
+              />
+            </>
           ) : (
             <div className="flex-1 flex items-center justify-center text-gray-400 bg-transparent">
               Select a channel to start collaborating
@@ -315,6 +601,21 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
                 View Details
               </button>
             </div>
+
+            {/* Admin Panel quick-info if admin */}
+            {isAdmin && (
+              <div className="mt-4 bg-[#1a1a2e] rounded-xl p-5 border border-[#6d28d9]/30 shadow-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <Shield size={14} className="text-[#8b5cf6]" />
+                  <h4 className="font-bold text-white text-sm">Admin Controls</h4>
+                </div>
+                <ul className="text-xs text-slate-400 space-y-1.5">
+                  <li>• Right-click any message to delete or kick</li>
+                  <li>• Right-click any channel to rename or manage</li>
+                  <li>• Use + next to Channels to create new ones</li>
+                </ul>
+              </div>
+            )}
           </aside>
         </div>
       </div>
@@ -349,15 +650,20 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
                 else { const e = await res.json(); alert(e.error || 'Failed to create channel'); }
               } catch (e) { console.error(e); }
             } else {
-              // DM: search for user then start DM
+              // DM: search for user by name, then start DM
               try {
                 const s = await fetch(API_URL + `/api/users/search?q=${encodeURIComponent(value)}`, {
                   headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 });
                 if (s.ok) {
                   const users = await s.json();
-                  if (users.length > 0) handleStartDm(users[0].id);
-                  else alert(`User "${value}" not found`);
+                  if (users.length > 0) {
+                    const recipient = users[0];
+                    // Pass recipient's full name so DM shows the real person's name
+                    handleStartDm(recipient.id, recipient.name || recipient.username);
+                  } else {
+                    alert(`User "${value}" not found`);
+                  }
                 }
               } catch (e) { console.error(e); }
             }
@@ -370,6 +676,30 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
         <CallModal
           roomName={activeRoomName || 'General'}
           onClose={() => setShowCallModal(false)}
+        />
+      )}
+
+      {/* Manage Members Modal */}
+      {manageMembersRoomId !== null && (
+        <ManageMembersModal
+          roomId={manageMembersRoomId}
+          onClose={() => { setManageMembersRoomId(null); setManageMembersData([]); }}
+          onAdd={handleAddUser}
+          onKick={async (userId) => {
+            await handleKickUser(userId, manageMembersRoomId);
+            fetchManageMembers(manageMembersRoomId);
+          }}
+          members={manageMembersData}
+        />
+      )}
+
+      {/* Rename Room Modal */}
+      {renameRoom && (
+        <RenameRoomModal
+          roomId={renameRoom.id}
+          currentName={renameRoom.name}
+          onClose={() => setRenameRoom(null)}
+          onRename={handleRenameRoom}
         />
       )}
     </div>

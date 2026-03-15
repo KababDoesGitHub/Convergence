@@ -8,10 +8,11 @@ interface MessageInputProps {
   handleSendFile: (file: File) => void;
   isDnDActive: boolean;
   roomName?: string;
+  disabled?: boolean;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({ 
-  inputText, setInputText, handleSendMessage, handleSendFile, isDnDActive, roomName
+  inputText, setInputText, handleSendMessage, handleSendFile, isDnDActive, roomName, disabled
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -28,6 +29,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
   const placeholder = isDnDActive 
     ? "Do Not Disturb active..." 
+    : disabled
+    ? "This channel is read-only"
     : `Message ${roomName ? '#' + roomName : '...'}`;
 
   return (
@@ -69,8 +72,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           placeholder={placeholder}
-          disabled={isDnDActive}
-          className="flex-1 bg-transparent outline-none text-sm text-slate-200 placeholder-slate-500 min-w-0"
+          disabled={isDnDActive || !!disabled}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) onSubmit(); }}
+          className={`flex-1 bg-transparent outline-none text-sm text-slate-200 placeholder-slate-500 min-w-0 ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
         />
 
         {/* Right side icons */}
