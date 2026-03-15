@@ -83,6 +83,7 @@ router.post('/dm', authMiddleware, async (req, res) => {
 // Get rooms for current user
 router.get('/my', authMiddleware, async (req, res) => {
   const role_level = req.user.role_level || 10;
+  const currentUserId = req.user.id;
 
   try {
     const db = await getDb();
@@ -94,9 +95,23 @@ router.get('/my', authMiddleware, async (req, res) => {
         FROM rooms r
         JOIN room_members rm ON r.room_id = rm.room_id
         WHERE rm.user_id = ? AND r.is_active = 1
-      `, [req.user.id]);
+      `, [currentUserId]);
     } else {
       rooms = await db.all('SELECT room_id as id, room_name as name, description FROM rooms WHERE is_active = 1');
+    }
+
+    // Resolve recipient names for DMs
+    for (let room of rooms) {
+      if (room.name.startsWith('DM-')) {
+        const ids = room.name.replace('DM-', '').split('-');
+        const otherId = ids.find(id => Number(id) !== Number(currentUserId));
+        if (otherId) {
+          const recipient = await db.get('SELECT full_name, username FROM users WHERE user_id = ?', [Number(otherId)]);
+          if (recipient) {
+            room.recipientName = recipient.full_name || recipient.username;
+          }
+        }
+      }
     }
     
     res.json(rooms);

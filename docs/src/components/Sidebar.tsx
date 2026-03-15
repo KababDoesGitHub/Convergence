@@ -39,6 +39,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   onDeleteRoom,
   onRenameRoom,
   onManageMembers,
+  isEmergencyMode,
+  setIsEmergencyMode,
 }) => {
   const [emergencyOpen, setEmergencyOpen] = useState(true);
   const [channelMenu, setChannelMenu] = useState<ChannelMenu | null>(null);
@@ -84,7 +86,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <div className="w-64 bg-[#0f0f1e] border-r border-[#1a1a2e] hidden md:flex flex-col z-10 transition-colors duration-300 h-full text-slate-300 select-none">
+    <div className={`w-64 bg-[#0f0f1e] border-r border-[#1a1a2e] hidden md:flex flex-col z-10 transition-colors duration-300 h-full text-slate-300 select-none ${isEmergencyMode ? 'emergency-mode-sidebar' : ''}`}>
       
       {/* Branding */}
       <div className="p-6 flex items-center gap-3">
@@ -211,32 +213,58 @@ const Sidebar: React.FC<SidebarProps> = ({
               const otherUserId = ids.find((id: string) => id !== user.id.toString());
               const isOnline = otherUserId && onlineUsers.has(parseInt(otherUserId));
               
-              // Use recipientName if available (set during DM creation), otherwise fall back to formatted room name
-              const displayName = room.recipientName || room.name.replace('DM-', 'Chat ');
+              // Use recipientName if available, otherwise just use the username of the other person (fallback)
+              const displayName = room.recipientName || (otherUserId && onlineUsers.has(parseInt(otherUserId)) ? `User ${otherUserId}` : room.name.replace('DM-', ''));
 
               return (
-                <button
+                <div
                   key={room.id}
-                  onClick={() => onRoomSelect(room.id)}
-                  className={`w-full text-left px-6 py-2 text-sm transition-all flex items-center justify-between group ${
-                    selectedRoomId === room.id
-                      ? 'bg-[#1a1a2e] text-white'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-[#1a1a2e]'
-                  }`}
+                  className="relative group/room flex items-center"
                 >
-                  <div className="flex items-center gap-3 max-w-[80%]">
-                    <Avatar src={undefined} fallback={displayName} className="w-6 h-6 rounded-full" />
-                    <span className="truncate">{displayName}</span>
-                  </div>
-                  {isOnline && (
-                    <div className="w-2 h-2 rounded-full bg-emerald-500/80"></div>
-                  )}
-                </button>
+                  <button
+                    onClick={() => onRoomSelect(room.id)}
+                    className={`flex-1 w-full text-left px-6 py-2 text-sm transition-all flex items-center justify-between group ${
+                      selectedRoomId === room.id
+                        ? 'bg-[#1a1a2e] text-white'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-[#1a1a2e]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 max-w-[80%]">
+                      <Avatar src={undefined} fallback={displayName} className="w-6 h-6 rounded-full" />
+                      <span className="truncate">{displayName}</span>
+                    </div>
+                    {isOnline && (
+                      <div className="w-2 h-2 rounded-full bg-emerald-500/80"></div>
+                    )}
+                  </button>
+                  <button
+                    title="Delete DM"
+                    onClick={(e) => { e.stopPropagation(); onDeleteRoom(room.id); }}
+                    className="absolute right-3 opacity-0 group-hover/room:opacity-100 transition-opacity text-slate-500 hover:text-rose-400 p-1"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               );
             })}
           </div>
         </div>
 
+      </div>
+
+      {/* Emergency Protocol Button at the bottom */}
+      <div className="p-4 border-t border-[#1a1a2e]">
+        <button
+          onClick={() => setIsEmergencyMode(!isEmergencyMode)}
+          className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${
+            isEmergencyMode 
+              ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-[0_0_15px_rgba(244,63,94,0.5)]' 
+              : 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30'
+          }`}
+        >
+          <AlertTriangle size={16} className={isEmergencyMode ? "animate-pulse" : ""} />
+          {isEmergencyMode ? 'EMERGENCY PROTOCOL ACTIVE' : 'ACTIVATE EMERGENCY'}
+        </button>
       </div>
 
       {/* Admin Channel Right-Click Context Menu */}

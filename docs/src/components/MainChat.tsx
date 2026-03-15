@@ -460,7 +460,10 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
   const activeRoom = rooms.find(r => r.id === selectedRoomId);
   const activeRoomName = activeRoom ? (
     activeRoom.name.startsWith('DM-') 
-      ? (activeRoom.recipientName || activeRoom.name.replace('DM-', 'Chat '))
+      ? (activeRoom.recipientName || (() => {
+          const otherId = activeRoom.name.replace('DM-', '').split('-').find((id: string) => id !== user.id.toString());
+          return otherId ? `User ${otherId}` : activeRoom.name.replace('DM-', '');
+        })())
       : activeRoom.name
   ) : undefined;
 
@@ -473,7 +476,7 @@ const MainChat: React.FC<MainChatProps> = ({ user, onLogout }) => {
   const canPostInRoom = !isAnnouncementsRoom || isRajeshSharma;
 
   return (
-    <div className="flex h-screen aether-chat-bg text-gray-200 transition-colors duration-300 overflow-hidden">
+    <div className={`flex h-screen aether-chat-bg text-gray-200 transition-colors duration-300 overflow-hidden ${isEmergencyMode ? 'emergency-mode-bg emergency-mode-text' : ''}`}>
       
       {/* Sidebar on the Left */}
       <Sidebar 
