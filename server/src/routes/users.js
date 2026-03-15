@@ -141,4 +141,10 @@ router.get('/search', require('../middleware/auth'), async (req, res) => {
   }
 });
 
+router.post('/logout', (req, res) => {
+  // If we had sessions, we would destroy them here.
+  // With stateless JWTs, we just tell the client "success" and the client drops the token.
+  res.status(200).json({ message: 'Logged out successfully' });
+});
+
 module.exports = router;
